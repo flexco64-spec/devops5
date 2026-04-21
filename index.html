@@ -1,12 +1,77 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-<title>Page Title</title>
+    <meta charset="UTF-8">
+    <title>심플 테트리스</title>
+    <style>
+        body { background: #202028; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        #game-container { position: relative; border: 2px solid #fff; }
+        canvas { display: block; background-color: #000; }
+        .info { margin-top: 20px; text-align: center; }
+        .score { font-size: 24px; color: #ffeb3b; }
+    </style>
 </head>
 <body>
 
-<h1>My First Heading</h1>
-<p>My first paragraph.</p>
+    <h1>Simple Tetris</h1>
+    <div id="game-container">
+        <canvas id="tetris" width="240" height="400"></canvas>
+    </div>
+    <div class="info">
+        <div class="score" id="score">Score: 0</div>
+        <p>방향키: 이동(← →) / 회전(↑) / 빨리 내리기(↓)</p>
+    </div>
 
-</body>
-</html>
+<script>
+const canvas = document.getElementById('tetris');
+const context = canvas.getContext('2d');
+const scoreElement = document.getElementById('score');
+
+context.scale(20, 20);
+
+// 라인 삭제 로직
+function arenaSweep() {
+    let rowCount = 1;
+    outer: for (let y = arena.length - 1; y > 0; --y) {
+        for (let x = 0; x < arena[y].length; ++x) {
+            if (arena[y][x] === 0) continue outer;
+        }
+        const row = arena.splice(y, 1)[0].fill(0);
+        arena.unshift(row);
+        ++y;
+        player.score += rowCount * 10;
+        rowCount *= 2;
+    }
+    updateScore();
+}
+
+// 충돌 감지
+function collide(arena, player) {
+    const [m, o] = [player.matrix, player.pos];
+    for (let y = 0; y < m.length; ++y) {
+        for (let x = 0; x < m[y].length; ++x) {
+            if (m[y][x] !== 0 && (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) return true;
+        }
+    }
+    return false;
+}
+
+// 매트릭스 생성 (캔버스 대용)
+function createMatrix(w, h) {
+    const matrix = [];
+    while (h--) matrix.push(new Array(w).fill(0));
+    return matrix;
+}
+
+// 블록 모양 정의
+function createPiece(type) {
+    if (type === 'T') return [[0, 1, 0], [1, 1, 1], [0, 0, 0]];
+    if (type === 'O') return [[2, 2], [2, 2]];
+    if (type === 'L') return [[0, 3, 0], [0, 3, 0], [0, 3, 3]];
+    if (type === 'J') return [[0, 4, 0], [0, 4, 0], [4, 4, 0]];
+    if (type === 'I') return [[0, 5, 0, 0], [0, 5, 0, 0], [0, 5, 0, 0], [0, 5, 0, 0]];
+    if (type === 'S') return [[0, 6, 6], [6, 6, 0], [0, 0, 0]];
+    if (type === 'Z') return [[7, 7, 0], [0, 7, 7], [0, 0, 0]];
+}
+
+function draw()
