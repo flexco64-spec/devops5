@@ -2,66 +2,62 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>심플 테트리스</title>
+    <title>심플 테트리스 - 시작 버튼 포함</title>
     <style>
-        body { background: #202028; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        #game-container { position: relative; border: 2px solid #fff; }
+        body { background: #202028; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        #game-container { position: relative; border: 4px solid #444; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
         canvas { display: block; background-color: #000; }
-        .info { margin-top: 20px; text-align: center; }
-        .score { font-size: 24px; color: #ffeb3b; }
+        .ui { margin-top: 20px; text-align: center; }
+        .score { font-size: 28px; color: #ffeb3b; margin-bottom: 10px; }
+        
+        /* 시작 버튼 스타일 */
+        #start-btn {
+            padding: 10px 30px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        #start-btn:hover { background-color: #45a049; }
+        #start-btn:disabled { background-color: #888; cursor: not-allowed; }
+        
+        .controls-info { font-size: 0.9em; color: #aaa; margin-top: 15px; }
     </style>
 </head>
 <body>
 
-    <h1>Simple Tetris</h1>
+    <h1>TETRIS</h1>
+    
     <div id="game-container">
         <canvas id="tetris" width="240" height="400"></canvas>
     </div>
-    <div class="info">
+
+    <div class="ui">
         <div class="score" id="score">Score: 0</div>
-        <p>방향키: 이동(← →) / 회전(↑) / 빨리 내리기(↓)</p>
+        <button id="start-btn">게임 시작</button>
+        <div class="controls-info">
+            방향키: 이동(← →), 회전(↑), 내리기(↓)
+        </div>
     </div>
 
 <script>
 const canvas = document.getElementById('tetris');
 const context = canvas.getContext('2d');
 const scoreElement = document.getElementById('score');
+const startBtn = document.getElementById('start-btn');
 
 context.scale(20, 20);
 
-// 라인 삭제 로직
-function arenaSweep() {
-    let rowCount = 1;
-    outer: for (let y = arena.length - 1; y > 0; --y) {
-        for (let x = 0; x < arena[y].length; ++x) {
-            if (arena[y][x] === 0) continue outer;
-        }
-        const row = arena.splice(y, 1)[0].fill(0);
-        arena.unshift(row);
-        ++y;
-        player.score += rowCount * 10;
-        rowCount *= 2;
-    }
-    updateScore();
-}
-
-// 충돌 감지
-function collide(arena, player) {
-    const [m, o] = [player.matrix, player.pos];
-    for (let y = 0; y < m.length; ++y) {
-        for (let x = 0; x < m[y].length; ++x) {
-            if (m[y][x] !== 0 && (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) return true;
-        }
-    }
-    return false;
-}
-
-// 매트릭스 생성 (캔버스 대용)
-function createMatrix(w, h) {
-    const matrix = [];
-    while (h--) matrix.push(new Array(w).fill(0));
-    return matrix;
-}
+// --- 게임 로직 변수 ---
+let gameRunning = false;
+let dropCounter = 0;
+let dropInterval = 1000;
+let lastTime = 0;
+const arena = createMatrix(12, 20);
+const player = { pos: {x: 0, y: 0}, matrix: null, score: 0 };
 
 // 블록 모양 정의
 function createPiece(type) {
@@ -74,4 +70,20 @@ function createPiece(type) {
     if (type === 'Z') return [[7, 7, 0], [0, 7, 7], [0, 0, 0]];
 }
 
-function draw()
+function createMatrix(w, h) {
+    const matrix = [];
+    while (h--) matrix.push(new Array(w).fill(0));
+    return matrix;
+}
+
+function draw() {
+    context.fillStyle = '#000';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    drawMatrix(arena, {x: 0, y: 0});
+    drawMatrix(player.matrix, player.pos);
+}
+
+function drawMatrix(matrix, offset) {
+    if (!matrix) return;
+    const colors = [null, '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', '#FF8E0D', '#FFE138', '#3877FF'];
+    matrix.forEach((
